@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% block title %}{{ cfg.title }} — AIDO{% endblock %}
+{% block page %}
+{% set input_types = {"int": "number", "money": "number", "date": "date", "email": "email", "tel": "tel"} %}
+<style>
+  .field-error { color: var(--error); font-size: 13px; font-weight: 400; margin: -10px 0 14px; }
+  input.invalid, textarea.invalid { border-color: var(--error); }
+  textarea { width: 100%; min-height: 96px; padding: 11px 14px; margin: 6px 0 16px; border: 1px solid var(--line); border-radius: 10px; font: inherit; color: var(--trust-blue); resize: vertical; }
+  textarea:focus { outline: none; border-color: var(--professional-blue); box-shadow: 0 0 0 3px rgba(54, 197, 216, .35); }
+  .req { color: var(--error); }
+  .form-actions { display: flex; gap: 8px; margin-top: 8px; }
+</style>
+<p style="margin: 0 0 8px;"><a class="muted" href="{{ url_for(key ~ '_list') }}" style="text-decoration: none;">← {{ cfg.title }} руу буцах</a></p>
+<h2 style="font-size: 24px; margin: 0 0 20px;">
+  {% if item %}{{ cfg.singular | capitalize }} засах{% else %}Шинэ {{ cfg.singular }} нэмэх{% endif %}
+</h2>
+<form class="card" method="post" style="max-width: 560px;" novalidate>
+  {% if save_error %}<div class="error">{{ save_error }}</div>{% endif %}
+  {% for f in cfg.fields %}
+  <label for="f-{{ f.name }}">{{ f.label }}{% if f.required %} <span class="req" aria-hidden="true">*</span>{% endif %}</label>
+  {% if f.type == "textarea" %}
+  <textarea id="f-{{ f.name }}" name="{{ f.name }}" class="{{ 'invalid' if errors[f.name] }}">{{ values[f.name] }}</textarea>
+  {% else %}
+  <input id="f-{{ f.name }}" name="{{ f.name }}" type="{{ input_types.get(f.type, 'text') }}" value="{{ values[f.name] }}"
+         class="{{ 'invalid' if errors[f.name] }}"
+         {% if f.required %}required{% endif %}
+         {% if f.type in ('int', 'money') %}inputmode="numeric" step="1" min="{{ f.min or 0 }}"{% endif %}>
+  {% endif %}
+  {% if errors[f.name] %}<p class="field-error">{{ errors[f.name] }}</p>{% endif %}
+  {% endfor %}
+  <div class="form-actions">
+    <button class="btn" type="submit">Хадгалах</button>
+    <a class="btn btn-outline" href="{{ url_for(key ~ '_list') }}" style="text-decoration: none; padding: 11px 18px;">Болих</a>
+  </div>
+</form>
+{% endblock %}

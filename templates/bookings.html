@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block title %}Захиалга — AIDO{% endblock %}
+{% block page %}
+{% set status_labels = {"pending": "Хүлээгдэж байна", "confirmed": "Баталгаажсан", "cancelled": "Цуцалсан"} %}
+<style>
+  .table-wrap { overflow-x: auto; padding: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 500; color: var(--professional-blue); background: var(--cool-white); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .nowrap { white-space: nowrap; }
+  .badge-pending { background: var(--cool-white); color: var(--professional-blue); border: 1px solid var(--line); }
+  .badge-confirmed { background: var(--trust-blue); color: var(--white); }
+  .badge-confirmed::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--tech-cyan); vertical-align: 1px; }
+  .badge-cancelled { background: var(--error-bg); color: var(--error); }
+</style>
+<h2 style="font-size: 24px; margin: 0 0 4px;">Захиалга</h2>
+<p class="muted" style="margin: 0 0 20px;">Нийт {{ bookings|length }} захиалга</p>
+{% if bookings %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Үйлчлүүлэгч</th>
+        <th>Утас</th>
+        <th>И-мэйл</th>
+        <th>Үйлчилгээ</th>
+        <th>Огноо, цаг</th>
+        <th>Төлөв</th>
+        <th>Тэмдэглэл</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td class="nowrap" style="font-weight: 500;">{{ b.customer_name }}</td>
+        <td class="nowrap">{{ b.customer_phone or "—" }}</td>
+        <td>{{ b.customer_email or "—" }}</td>
+        <td>{{ b.service }}</td>
+        <td class="nowrap">{{ b.booking_date }}</td>
+        <td><span class="badge badge-{{ b.status }}">{{ status_labels.get(b.status, b.status) }}</span></td>
+        <td class="muted">{{ b.note or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card muted">Одоогоор захиалга алга байна.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+{% block title %}{{ cfg.title }} — AIDO{% endblock %}
+{% block page %}
+{% set list_fields = cfg.fields | selectattr("list") | list %}
+<style>
+  .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .search { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search input { margin: 0; flex: 1; min-width: 200px; }
+  .table-wrap { overflow-x: auto; padding: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 500; color: var(--professional-blue); background: var(--cool-white); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  td.row-actions { white-space: nowrap; text-align: right; }
+  .row-actions a { font-weight: 500; text-decoration: none; margin-left: 12px; }
+  .link-edit { color: var(--professional-blue); }
+  .link-delete { color: var(--error); }
+  .row-actions a:hover { text-decoration: underline; }
+</style>
+<div class="page-head">
+  <div>
+    <h2 style="font-size: 24px; margin: 0 0 4px;">{{ cfg.title }}</h2>
+    <p class="muted" style="margin: 0;">
+      {% if query %}«{{ query }}» гэж хайхад {{ rows|length }} илэрц{% else %}Нийт {{ rows|length }}{% endif %}
+    </p>
+  </div>
+  <a class="btn" href="{{ url_for(key ~ '_new') }}" style="text-decoration: none;">+ Шинэ {{ cfg.singular }} нэмэх</a>
+</div>
+
+<form class="search" method="get" action="{{ url_for(key ~ '_list') }}" role="search">
+  <input type="search" name="q" value="{{ query }}" placeholder="{{ cfg.search_hint }}" aria-label="Хайх">
+  <button class="btn" type="submit">Хайх</button>
+  {% if query %}<a class="btn btn-outline" href="{{ url_for(key ~ '_list') }}" style="text-decoration: none; padding: 11px 18px;">Цэвэрлэх</a>{% endif %}
+</form>
+
+{% if load_error %}
+<div class="error">{{ load_error }}</div>
+{% elif rows %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        {% for f in list_fields %}<th class="{{ 'num' if f.type in ('int', 'money') }}">{{ f.label }}</th>{% endfor %}
+        <th><span class="visually-hidden">Үйлдэл</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        {% for f in list_fields %}
+        <td class="{{ 'num' if f.type in ('int', 'money') }}"{% if loop.first %} style="font-weight: 500;"{% endif %}>{{ row[f.name] | display(f.type) }}</td>
+        {% endfor %}
+        <td class="row-actions">
+          <a class="link-edit" href="{{ url_for(key ~ '_edit', item_id=row.id) }}">Засах</a>
+          <a class="link-delete" href="{{ url_for(key ~ '_delete', item_id=row.id) }}">Устгах</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif query %}
+<div class="card muted">«{{ query }}» гэсэн үгээр юу ч олдсонгүй.</div>
+{% else %}
+<div class="card muted">Одоогоор бүртгэл алга байна. «Шинэ {{ cfg.singular }} нэмэх» товчоор нэмнэ үү.</div>
+{% endif %}
+{% endblock %}

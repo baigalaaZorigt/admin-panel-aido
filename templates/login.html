@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Нэвтрэх — AIDO{% endblock %}
+{% block content %}
+<div style="max-width: 400px; margin: 8vh auto; padding: 0 16px;">
+  <div style="text-align: center; margin-bottom: 28px;">
+    <img src="{{ url_for('static', filename='logo.svg') }}" alt="AIDO Travel Tech" style="height: 120px; width: auto;">
+    <p class="heading" style="font-size: 18px; margin: 20px 0 0;">Аяллын бизнесээ нэг платформоос удир.</p>
+  </div>
+  <form class="card" method="post">
+    <h1 style="font-size: 22px; margin: 0 0 20px;">Нэвтрэх</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <label>И-мэйл хаяг
+      <input type="email" name="email" required autofocus>
+    </label>
+    <label>Нууц үг
+      <input type="password" name="password" required>
+    </label>
+    <button class="btn" type="submit" style="width: 100%; margin-top: 4px;">Нэвтрэх</button>
+  </form>
+</div>
+{% endblock %}

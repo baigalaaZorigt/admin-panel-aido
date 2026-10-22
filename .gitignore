@@ -1,0 +1,20 @@
+# Нууц тохиргоо (Supabase түлхүүр г.м.) — хэзээ ч GitHub-д бүү оруул
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python-ий виртуал орчин ба түр файлууд
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Систем, редакторын түр файлууд
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.log

@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block title %}{{ cfg.title }} устгах — AIDO{% endblock %}
+{% block page %}
+<h2 style="font-size: 24px; margin: 0 0 20px;">{{ cfg.singular | capitalize }} устгах</h2>
+<form class="card" method="post" style="max-width: 560px;">
+  <p class="heading" style="font-size: 18px; margin: 0 0 8px;">«{{ item[cfg.name_field] }}»-г устгах уу?</p>
+  <p class="muted" style="margin: 0 0 20px;">Устгасан мэдээллийг буцааж сэргээх боломжгүй.</p>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn btn-danger" type="submit">Тийм, устгах</button>
+    <a class="btn btn-outline" href="{{ url_for(key ~ '_list') }}" style="text-decoration: none; padding: 11px 18px;" autofocus>Болих</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — AIDO{% endblock %}
+{% block content %}
+<div style="max-width: 400px; margin: 12vh auto; padding: 0 16px; text-align: center;">
+  <div class="card">
+    <h1 style="font-size: 22px; margin: 0 0 8px;">{{ title }}</h1>
+    <p class="muted" style="margin: 0 0 20px;">{{ message }}</p>
+    <a class="btn" href="{{ url_for('drafts') }}" style="text-decoration: none;">Нүүр хуудас руу</a>
+  </div>
+</div>
+{% endblock %}

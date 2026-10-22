@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AIDO самбар{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='logo.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* AIDO Visual Brand Book V1-ийн өнгөнүүд */
+    :root {
+      --trust-blue: #123B6D;        /* Primary */
+      --professional-blue: #2F6F9F; /* Secondary */
+      --tech-cyan: #36C5D8;         /* Accent — зөвхөн тодотгоход */
+      --cool-white: #F4F8FC;        /* Neutral */
+      --white: #FFFFFF;
+      --line: #DCE6F0;
+      --error: #B42318;
+      --error-bg: #FDECEA;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Roboto", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      background: var(--cool-white);
+      color: var(--trust-blue);
+    }
+    h1, h2, h3, .heading {
+      font-family: "Noto Sans", Arial, sans-serif;
+      font-weight: 600;
+      color: var(--trust-blue);
+      line-height: 1.25;
+    }
+    .card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    label { display: block; font-weight: 500; font-size: 14px; color: var(--trust-blue); }
+    input {
+      width: 100%;
+      padding: 11px 14px;
+      margin: 6px 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font: inherit;
+      color: var(--trust-blue);
+      background: var(--white);
+    }
+    input:focus { outline: none; border-color: var(--professional-blue); box-shadow: 0 0 0 3px rgba(54, 197, 216, .35); }
+    .btn {
+      display: inline-block;
+      padding: 11px 18px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--trust-blue);
+      color: var(--white);
+      font: 500 15px "Roboto", Arial, sans-serif;
+      cursor: pointer;
+    }
+    .btn:hover { background: var(--professional-blue); }
+    .btn:focus-visible { outline: 3px solid var(--tech-cyan); outline-offset: 2px; }
+    .btn-outline { background: transparent; color: var(--trust-blue); border: 1px solid var(--line); padding: 8px 14px; }
+    .btn-outline:hover { background: var(--cool-white); }
+    .btn-danger { background: var(--error); }
+    .btn-danger:hover { background: #8F1C13; }
+    .notice { padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; }
+    .notice-success { background: var(--white); border: 1px solid var(--line); border-left: 4px solid var(--tech-cyan); }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .muted { color: var(--professional-blue); }
+    .badge { display: inline-block; font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+    .error {
+      background: var(--error-bg);
+      color: var(--error);
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  {% block content %}{% endblock %}
+</body>
+</html>
