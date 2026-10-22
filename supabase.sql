@@ -58,9 +58,11 @@ create table if not exists public.users (
   created_at     timestamptz not null default now()
 );
 
--- Анхны хэрэглэгч: нууц үгийг bcrypt-ээр шифрлэж хадгална
+-- Анхны хэрэглэгч: нууц үгийг bcrypt-ээр шифрлэж хадгална.
+-- Ажиллуулахаасаа өмнө 'ЭНД_ХҮЧТЭЙ_НУУЦ_ҮГ'-ийг өөрийн нууц үгээр сольно.
+-- Жинхэнэ нууц үгтэй хувилбарыг GitHub руу бүү push хий.
 insert into public.users (email, password_hash, role) values
-  ('admin@gmail.com', extensions.crypt('qwerty1234', extensions.gen_salt('bf')), 'admin')
+  ('admin@gmail.com', extensions.crypt('ЭНД_ХҮЧТЭЙ_НУУЦ_ҮГ', extensions.gen_salt('bf')), 'admin')
 on conflict (email) do nothing;
 
 
