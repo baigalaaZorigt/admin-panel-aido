@@ -1,34 +1,55 @@
 {% extends "layout.html" %}
 {% block title %}Контент — AIDO{% endblock %}
 {% block page %}
-{% set status_labels = {"draft": "Ноорог", "review": "Хянаж байна", "published": "Нийтэлсэн", "rejected": "Татгалзсан"} %}
+{% set status_labels = {"draft": "Ноорог", "pending": "Хүлээгдэж буй", "review": "Хянаж байна", "published": "Нийтлэгдсэн", "rejected": "Татгалзсан"} %}
 <style>
-  .badge-draft { background: var(--cool-white); color: var(--professional-blue); border: 1px solid var(--line); }
+  .badge-draft, .badge-pending { background: var(--cool-white); color: var(--professional-blue); border: 1px solid var(--line); }
   .badge-review { background: var(--professional-blue); color: var(--white); }
-  .badge-published { background: var(--trust-blue); color: var(--white); }
-  .badge-published::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--tech-cyan); vertical-align: 1px; }
+  .badge-published { background: #14532D; color: var(--white); }
   .badge-rejected { background: var(--error-bg); color: var(--error); }
-  .actions { display: flex; gap: 8px; margin-top: 16px; }
-  .btn-reject { background: var(--white); color: var(--error); border: 1px solid var(--line); }
-  .btn-reject:hover { background: var(--error-bg); }
+  .poster-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .poster-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; font-size: 13px; }
+  .poster-meta a { color: var(--professional-blue); font-weight: 500; }
+  .slides { display: flex; gap: 12px; overflow-x: auto; margin-top: 16px; padding-bottom: 8px; scroll-snap-type: x mandatory; }
+  .slide { flex: 0 0 240px; scroll-snap-align: start; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--white); }
+  .slide img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--cool-white); }
+  .slide-noimg { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; background: var(--cool-white); font-size: 13px; }
+  .slide-body { padding: 10px 12px; font-size: 13px; }
+  .slide-num { font-weight: 500; margin-bottom: 4px; }
+  .slide-text { white-space: pre-line; margin: 0; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
 </style>
-<h2 style="font-size: 24px; margin: 0 0 4px;">Ноорог постууд</h2>
-<p class="muted" style="margin: 0 0 20px;">Нийт {{ drafts|length }} пост</p>
-{% for d in drafts %}
-<article class="card" style="margin-bottom: 12px;">
-  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
-    <h3 style="font-size: 17px; margin: 0;">{{ d.title }}</h3>
-    <span class="badge badge-{{ d.status }}">{{ status_labels.get(d.status, d.status) }}</span>
+<h2 style="font-size: 24px; margin: 0 0 4px;">Контент</h2>
+<p class="muted" style="margin: 0 0 20px;">Нийт {{ posters|length }} пост</p>
+{% for p in posters %}
+<article class="card" style="margin-bottom: 16px;">
+  <div class="poster-head">
+    <div>
+      <h3 style="font-size: 17px; margin: 0;">{{ p.poster_id or "Дугааргүй пост" }}</h3>
+      <div class="poster-meta muted">
+        <span>{{ p.slides|length }} слайд</span>
+        {% if p.published_at %}<span>Нийтэлсэн: {{ p.published_at.strftime("%Y-%m-%d %H:%M") }}</span>{% endif %}
+        {% if p.fb_post_id %}<a href="https://facebook.com/{{ p.fb_post_id }}" target="_blank" rel="noopener">Facebook-т харах ↗</a>{% endif %}
+      </div>
+    </div>
+    <span class="badge badge-{{ p.status }}">{{ status_labels.get(p.status, p.status) }}</span>
   </div>
-  <p class="muted" style="margin: 8px 0 0;">{{ d.body or "" }}</p>
-  {% if d.status == "review" %}
-  <form class="actions" method="post" action="{{ url_for('review_draft', draft_id=d.id) }}">
-    <button class="btn" type="submit" name="action" value="approve">Батлах</button>
-    <button class="btn btn-reject" type="submit" name="action" value="reject">Татгалзах</button>
-  </form>
-  {% endif %}
+  <div class="slides">
+    {% for s in p.slides %}
+    <div class="slide">
+      {% if s.image_src %}
+      <a href="{{ s.image_url }}" target="_blank" rel="noopener"><img src="{{ s.image_src }}" alt="Слайд {{ loop.index }}" loading="lazy"></a>
+      {% else %}
+      <div class="slide-noimg muted">Зураггүй</div>
+      {% endif %}
+      <div class="slide-body">
+        <div class="slide-num">Слайд {{ loop.index }}</div>
+        <p class="slide-text muted" title="{{ s.text or '' }}">{{ s.text or "" }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
 </article>
 {% else %}
-<div class="card muted">Одоогоор ноорог пост алга байна.</div>
+<div class="card muted">Одоогоор пост алга байна.</div>
 {% endfor %}
 {% endblock %}

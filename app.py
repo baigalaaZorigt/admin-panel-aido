@@ -77,7 +77,7 @@ def supabase_delete(table, filters):
 def find_user(email):
     rows = supabase_get(
         "users",
-        {"select": "id,email,password_hash,role", "email": f"eq.{email}", "limit": 1},
+        {"select": "id,email,password_hash", "email": f"eq.{email}", "limit": 1},
     )
     return rows[0] if rows else None
 
@@ -125,9 +125,43 @@ def logout():
 def drafts():
     rows = supabase_get(
         "content_drafts",
-        {"select": "id,title,body,status,created_at", "order": "created_at.desc"},
+        {"select": "id,poster_id,text,image_url,fb_post_id,status,created_at,published_at",
+         "order": "created_at.desc"},
     )
-    return render_template("drafts.html", drafts=rows, active="content")
+    return render_template("drafts.html", posters=group_posters(rows), active="content")
+
+
+DRIVE_FILE_RE = re.compile(r"drive\.google\.com/file/d/([\w-]+)")
+
+
+def image_src(url):
+    """Google Drive-ийн «file/d/ID/view» холбоосыг <img>-д харагдах зураг болгоно."""
+    m = DRIVE_FILE_RE.search(url or "")
+    return f"https://drive.google.com/thumbnail?id={m.group(1)}&sz=w800" if m else url
+
+
+def group_posters(rows):
+    """Нэг poster_id-тай мөрүүдийг (слайдуудыг) нэг карт болгон бүлэглэнэ."""
+    groups = {}
+    for row in rows:
+        key = row["poster_id"] or f"row-{row['id']}"  # poster_id-гүй мөр тус тусдаа карт
+        groups.setdefault(key, []).append(row)
+    posters = []
+    for slides in groups.values():
+        slides.sort(key=lambda s: s["id"])
+        published = [s["published_at"] for s in slides if s["published_at"]]
+        posters.append({
+            "poster_id": slides[0]["poster_id"],
+            "status": "published" if any(s["status"] == "published" for s in slides) else slides[0]["status"],
+            "published_at": parse_ts(max(published)) if published else None,
+            "fb_post_id": next((s["fb_post_id"] for s in slides if s["fb_post_id"]), None),
+            "slides": [{**s, "image_src": image_src(s["image_url"])} for s in slides],
+        })
+    return posters
+
+
+def parse_ts(value):
+    return datetime.fromisoformat(value).astimezone(UB_TZ)
 
 
 @app.route("/drafts/<int:draft_id>/review", methods=["POST"])
@@ -142,7 +176,7 @@ def review_draft(draft_id):
         updated = supabase_update(
             "content_drafts",
             {"id": f"eq.{draft_id}", "status": "eq.review"},
-            {"status": new_status, "updated_at": datetime.now(UB_TZ).isoformat()},
+            {"status": new_status},
         )
     except requests.RequestException:
         flash("Төлөв солиход алдаа гарлаа. Дахин оролдоно уу.", "error")
@@ -150,9 +184,9 @@ def review_draft(draft_id):
     if not updated:
         flash("Энэ пост аль хэдийн шийдвэрлэгдсэн байна.", "error")
     elif new_status == "published":
-        flash(f"«{updated[0]['title']}» постыг баталлаа.", "success")
+        flash(f"«{updated[0]['poster_id'] or updated[0]['id']}» постыг баталлаа.", "success")
     else:
-        flash(f"«{updated[0]['title']}» постоос татгалзлаа.", "success")
+        flash(f"«{updated[0]['poster_id'] or updated[0]['id']}» постоос татгалзлаа.", "success")
     return redirect(url_for("drafts"))
 
 
