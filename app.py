@@ -14,6 +14,7 @@ load_dotenv()
 
 SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
 SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
+N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL", "").strip()
 UB_TZ = ZoneInfo("Asia/Ulaanbaatar")
 
 app = Flask(__name__)
@@ -22,8 +23,8 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 # Өөр сайтаас манай товчийг нууцаар дарууллахаас (CSRF) хамгаална
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
-# Товч бүр постыг ямар төлөвт шилжүүлэх вэ
-REVIEW_ACTIONS = {"approve": "published", "reject": "rejected"}
+# Эдгээр төлөвтэй постыг дахин батлахгүй
+DONE_STATUSES = ("approved", "published")
 
 
 def supabase_get(table, params):
@@ -164,30 +165,50 @@ def parse_ts(value):
     return datetime.fromisoformat(value).astimezone(UB_TZ)
 
 
-@app.route("/drafts/<int:draft_id>/review", methods=["POST"])
+@app.route("/posters/<poster_id>/approve", methods=["POST"])
 @login_required
-def review_draft(draft_id):
-    new_status = REVIEW_ACTIONS.get(request.form.get("action"))
-    if not new_status:
-        flash("Буруу үйлдэл.", "error")
+def approve_poster(poster_id):
+    if not N8N_WEBHOOK_URL:
+        flash(".env файлд N8N_WEBHOOK_URL тохируулаагүй байна.", "error")
         return redirect(url_for("drafts"))
     try:
-        # Зөвхөн «Хянаж байна» төлөвтэй байвал солино — хоёр хүн зэрэг дарахаас хамгаална
-        updated = supabase_update(
+        # Аль хэдийн батлагдсан/нийтлэгдсэн мөрийг дахин хөндөхгүй — хоёр хүн зэрэг дарахаас хамгаална
+        pending = supabase_get(
             "content_drafts",
-            {"id": f"eq.{draft_id}", "status": "eq.review"},
-            {"status": new_status},
+            {"select": "id,status", "poster_id": f"eq.{poster_id}", "status": f"not.in.({','.join(DONE_STATUSES)})"},
+        )
+        if not pending:
+            flash(f"«{poster_id}» пост аль хэдийн батлагдсан байна.", "error")
+            return redirect(url_for("drafts"))
+        supabase_update(
+            "content_drafts",
+            {"id": f"in.({','.join(str(r['id']) for r in pending)})"},
+            {"status": "approved"},
         )
     except requests.RequestException:
         flash("Төлөв солиход алдаа гарлаа. Дахин оролдоно уу.", "error")
         return redirect(url_for("drafts"))
-    if not updated:
-        flash("Энэ пост аль хэдийн шийдвэрлэгдсэн байна.", "error")
-    elif new_status == "published":
-        flash(f"«{updated[0]['poster_id'] or updated[0]['id']}» постыг баталлаа.", "success")
-    else:
-        flash(f"«{updated[0]['poster_id'] or updated[0]['id']}» постоос татгалзлаа.", "success")
+    try:
+        resp = requests.post(N8N_WEBHOOK_URL, json={"poster_id": poster_id}, timeout=15)
+        resp.raise_for_status()
+    except requests.RequestException:
+        # n8n хүлээж аваагүй бол төлөвийг буцааж, дахин «Батлах» дарах боломж үлдээнэ
+        restore_statuses(pending)
+        flash(f"«{poster_id}» постыг n8n руу илгээж чадсангүй. Дахин оролдоно уу.", "error")
+        return redirect(url_for("drafts"))
+    flash(f"«{poster_id}» постыг баталж, n8n руу илгээлээ.", "success")
     return redirect(url_for("drafts"))
+
+
+def restore_statuses(rows):
+    by_status = {}
+    for row in rows:
+        by_status.setdefault(row["status"], []).append(str(row["id"]))
+    for status, ids in by_status.items():
+        try:
+            supabase_update("content_drafts", {"id": f"in.({','.join(ids)})"}, {"status": status})
+        except requests.RequestException:
+            app.logger.exception("Төлөв буцааж чадсангүй: %s", ids)
 
 
 @app.route("/bookings")

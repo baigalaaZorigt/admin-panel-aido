@@ -1,10 +1,11 @@
 {% extends "layout.html" %}
 {% block title %}Контент — AIDO{% endblock %}
 {% block page %}
-{% set status_labels = {"draft": "Ноорог", "pending": "Хүлээгдэж буй", "review": "Хянаж байна", "published": "Нийтлэгдсэн", "rejected": "Татгалзсан"} %}
+{% set status_labels = {"draft": "Ноорог", "pending": "Хүлээгдэж буй", "review": "Хянаж байна", "approved": "Батлагдсан", "published": "Нийтлэгдсэн", "rejected": "Татгалзсан"} %}
 <style>
   .badge-draft, .badge-pending { background: var(--cool-white); color: var(--professional-blue); border: 1px solid var(--line); }
-  .badge-review { background: var(--professional-blue); color: var(--white); }
+  .badge-review, .badge-approved { background: var(--professional-blue); color: var(--white); }
+  .poster-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
   .badge-published { background: #14532D; color: var(--white); }
   .badge-rejected { background: var(--error-bg); color: var(--error); }
   .poster-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
@@ -31,7 +32,14 @@
         {% if p.fb_post_id %}<a href="https://facebook.com/{{ p.fb_post_id }}" target="_blank" rel="noopener">Facebook-т харах ↗</a>{% endif %}
       </div>
     </div>
-    <span class="badge badge-{{ p.status }}">{{ status_labels.get(p.status, p.status) }}</span>
+    <div class="poster-side">
+      <span class="badge badge-{{ p.status }}">{{ status_labels.get(p.status, p.status) }}</span>
+      {% if p.poster_id and p.status not in ("approved", "published") %}
+      <form method="post" action="{{ url_for('approve_poster', poster_id=p.poster_id) }}">
+        <button class="btn" type="submit">Батлах</button>
+      </form>
+      {% endif %}
+    </div>
   </div>
   <div class="slides">
     {% for s in p.slides %}
