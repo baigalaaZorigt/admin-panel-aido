@@ -190,6 +190,7 @@ def approve_poster(poster_id):
         return redirect(url_for("drafts"))
     try:
         resp = requests.post(N8N_WEBHOOK_URL, json={"poster_id": poster_id}, timeout=15)
+        app.logger.warning("n8n хариу (%s): %s %s", poster_id, resp.status_code, resp.text[:300])
         resp.raise_for_status()
     except requests.RequestException:
         # n8n хүлээж аваагүй бол төлөвийг буцааж, дахин «Батлах» дарах боломж үлдээнэ
