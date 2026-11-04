@@ -1,7 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}Захиалга — AIDO{% endblock %}
 {% block page %}
-{% set status_labels = {"pending": "Хүлээгдэж байна", "confirmed": "Баталгаажсан", "cancelled": "Цуцалсан"} %}
 <style>
   .table-wrap { overflow-x: auto; padding: 0; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -9,37 +8,45 @@
   th { font-weight: 500; color: var(--professional-blue); background: var(--cool-white); white-space: nowrap; }
   tbody tr:last-child td { border-bottom: 0; }
   .nowrap { white-space: nowrap; }
-  .badge-pending { background: var(--cool-white); color: var(--professional-blue); border: 1px solid var(--line); }
-  .badge-confirmed { background: var(--trust-blue); color: var(--white); }
-  .badge-confirmed::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--tech-cyan); vertical-align: 1px; }
-  .badge-cancelled { background: var(--error-bg); color: var(--error); }
+  .num { text-align: right; white-space: nowrap; }
+  .badge-status { background: var(--cool-white); color: var(--professional-blue); border: 1px solid var(--line); }
 </style>
 <h2 style="font-size: 24px; margin: 0 0 4px;">Захиалга</h2>
-<p class="muted" style="margin: 0 0 20px;">Нийт {{ bookings|length }} захиалга</p>
-{% if bookings %}
+<p class="muted" style="margin: 0 0 20px;">Нийт {{ orders|length }} захиалга</p>
+{% if orders %}
 <div class="card table-wrap">
   <table>
     <thead>
       <tr>
+        <th>Дугаар</th>
+        <th>Огноо</th>
         <th>Үйлчлүүлэгч</th>
-        <th>Утас</th>
-        <th>И-мэйл</th>
-        <th>Үйлчилгээ</th>
-        <th>Огноо, цаг</th>
+        <th>Дүүрэг</th>
+        <th>Бүтээгдэхүүн</th>
+        <th class="num">Тоо</th>
+        <th class="num">Нэгж үнэ</th>
+        <th class="num">Хүргэлт</th>
+        <th class="num">Нийт</th>
+        <th>Төлбөр</th>
+        <th>Суваг</th>
         <th>Төлөв</th>
-        <th>Тэмдэглэл</th>
       </tr>
     </thead>
     <tbody>
-      {% for b in bookings %}
+      {% for o in orders %}
       <tr>
-        <td class="nowrap" style="font-weight: 500;">{{ b.customer_name }}</td>
-        <td class="nowrap">{{ b.customer_phone or "—" }}</td>
-        <td>{{ b.customer_email or "—" }}</td>
-        <td>{{ b.service }}</td>
-        <td class="nowrap">{{ b.booking_date }}</td>
-        <td><span class="badge badge-{{ b.status }}">{{ status_labels.get(b.status, b.status) }}</span></td>
-        <td class="muted">{{ b.note or "—" }}</td>
+        <td class="nowrap" style="font-weight: 500;">{{ o.order_id }}</td>
+        <td class="nowrap">{{ o.date }}</td>
+        <td>{{ o.customer or "—" }}</td>
+        <td>{{ o.district or "—" }}</td>
+        <td>{{ o.product or "—" }}</td>
+        <td class="num">{{ o.quantity }}</td>
+        <td class="num">{{ "{:,.0f}₮".format(o.unit_price) }}</td>
+        <td class="num">{{ "{:,.0f}₮".format(o.delivery_fee) }}</td>
+        <td class="num" style="font-weight: 500;">{{ "{:,.0f}₮".format(o.total) }}</td>
+        <td>{{ o.payment_method or "—" }}</td>
+        <td>{{ o.channel or "—" }}</td>
+        <td>{% if o.status %}<span class="badge badge-status">{{ o.status }}</span>{% else %}—{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>

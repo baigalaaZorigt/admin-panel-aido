@@ -216,17 +216,14 @@ def restore_statuses(rows):
 @login_required
 def bookings():
     rows = supabase_get(
-        "bookings",
+        "orders",
         {
-            "select": "id,customer_name,customer_phone,customer_email,service,booking_date,status,note",
-            "order": "booking_date.asc",
+            "select": "order_id,date,channel,customer,district,product,quantity,"
+                      "unit_price,delivery_fee,total,payment_method,status",
+            "order": "date.desc,created_at.desc",
         },
     )
-    for row in rows:
-        # Supabase цагийг UTC-ээр өгдөг тул Улаанбаатарын цаг руу хөрвүүлнэ
-        when = datetime.fromisoformat(row["booking_date"]).astimezone(UB_TZ)
-        row["booking_date"] = when.strftime("%Y-%m-%d %H:%M")
-    return render_template("bookings.html", bookings=rows, active="bookings")
+    return render_template("bookings.html", orders=rows, active="bookings")
 
 
 @app.route("/facebook")
