@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+{% block title %}Чат — AIDO{% endblock %}
+{% block page %}
+{% set role_labels = {"user": "Үйлчлүүлэгч", "bot": "Бот"} %}
+<style>
+  .chat { display: grid; grid-template-columns: 280px 1fr; gap: 16px; align-items: start; }
+  .conv-list { padding: 0; overflow: hidden; }
+  .conv { display: block; padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--trust-blue); text-decoration: none; }
+  .conv:last-child { border-bottom: 0; }
+  .conv:hover { background: var(--cool-white); }
+  .conv.active { background: var(--cool-white); box-shadow: inset 3px 0 0 var(--trust-blue); }
+  .conv-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .conv-id { font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conv-last { font-size: 13px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conv-time { font-size: 12px; white-space: nowrap; }
+  .badge-staff { background: var(--error); color: var(--white); font-size: 12px; padding: 2px 8px; }
+  .thread-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .handoff-reason { font-size: 13px; margin-top: 6px; color: var(--error); }
+  .messages { display: flex; flex-direction: column; gap: 10px; padding: 16px 0; max-height: 60vh; overflow-y: auto; }
+  .msg { max-width: 75%; padding: 10px 14px; border-radius: 14px; font-size: 14px; white-space: pre-line; }
+  .msg-user { align-self: flex-start; background: var(--cool-white); border: 1px solid var(--line); }
+  .msg-bot { align-self: flex-end; background: var(--trust-blue); color: var(--white); }
+  .msg-staff { align-self: flex-end; background: var(--professional-blue); color: var(--white); }
+  .msg-meta { font-size: 11px; opacity: .7; margin-top: 4px; }
+  .reply { display: flex; gap: 8px; align-items: flex-end; padding-top: 12px; border-top: 1px solid var(--line); }
+  .reply textarea { flex: 1; min-height: 44px; resize: vertical; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+  .reply textarea:focus { outline: none; border-color: var(--professional-blue); box-shadow: 0 0 0 3px rgba(54, 197, 216, .35); }
+  @media (max-width: 720px) { .chat { grid-template-columns: 1fr; } .msg { max-width: 90%; } }
+</style>
+<h2 style="font-size: 24px; margin: 0 0 4px;">Чат</h2>
+<p class="muted" style="margin: 0 0 20px;">Нийт {{ conversations|length }} яриа</p>
+{% if conversations %}
+<div class="chat">
+  <nav class="card conv-list">
+    {% for c in conversations %}
+    <a class="conv {{ 'active' if selected and c.sender_id == selected.sender_id }}" href="{{ url_for('chat', sender=c.sender_id) }}">
+      <div class="conv-top">
+        <span class="conv-id">{{ c.sender_id }}</span>
+        {% if c.handoff %}<span class="badge badge-staff">Ажилтан хэрэгтэй</span>
+        {% else %}<span class="conv-time muted">{{ c.last.created_at.strftime("%m-%d %H:%M") }}</span>{% endif %}
+      </div>
+      <div class="conv-last muted">{{ c.last.text }}</div>
+    </a>
+    {% endfor %}
+  </nav>
+
+  {% if selected %}
+  <section class="card">
+    <div class="thread-head">
+      <div>
+        <h3 style="font-size: 17px; margin: 0;">{{ selected.sender_id }}</h3>
+        <div class="muted" style="font-size: 13px; margin-top: 2px;">{{ selected.messages|length }} мессеж</div>
+        {% if selected.handoff and selected.handoff.reason %}<div class="handoff-reason">Шалтгаан: {{ selected.handoff.reason }}</div>{% endif %}
+      </div>
+      {% if selected.handoff %}
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+        <span class="badge badge-staff">Ажилтан хэрэгтэй</span>
+        <form method="post" action="{{ url_for('chat_resolve', sender_id=selected.sender_id) }}">
+          <button class="btn btn-outline" type="submit">Шийдсэн</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    <div class="messages" id="messages">
+      {% for m in selected.messages %}
+      <div class="msg msg-{{ m.role if m.role in ('user', 'bot') else 'staff' }}">
+        {{- m.text -}}
+        <div class="msg-meta">{{ role_labels.get(m.role, "Ажилтан") }} · {{ m.created_at.strftime("%Y-%m-%d %H:%M") }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <form class="reply" method="post" action="{{ url_for('chat_reply', sender_id=selected.sender_id) }}">
+      <textarea name="text" placeholder="Хариугаа бичнэ үү..." required></textarea>
+      <button class="btn" type="submit">Илгээх</button>
+    </form>
+  </section>
+  {% endif %}
+</div>
+<script>
+  // Хамгийн сүүлийн мессеж харагдахаар доош гүйлгэнэ
+  var box = document.getElementById("messages");
+  if (box) box.scrollTop = box.scrollHeight;
+</script>
+{% else %}
+<div class="card muted">Одоогоор чат алга байна.</div>
+{% endif %}
+{% endblock %}

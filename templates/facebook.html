@@ -1,0 +1,108 @@
+{% extends "layout.html" %}
+{% block title %}Facebook — AIDO{% endblock %}
+{% block page %}
+<style>
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+  .stat-label { font-size: 13px; color: var(--professional-blue); }
+  .stat-value { font-size: 28px; font-weight: 600; color: var(--trust-blue); margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .up { color: #15803D; }
+  .down { color: var(--error); }
+  .chart-card h3, .posts-head h3 { font-size: 17px; margin: 0 0 12px; }
+  .chart { width: 100%; height: auto; display: block; }
+  .chart .grid { stroke: var(--line); stroke-width: 1; }
+  .chart .axis { fill: var(--professional-blue); font-size: 11px; }
+  .chart .area { fill: var(--tech-cyan); opacity: .15; }
+  .chart .line { fill: none; stroke: var(--trust-blue); stroke-width: 2; stroke-linejoin: round; }
+  .chart .dot { fill: var(--trust-blue); }
+  .table-wrap { overflow-x: auto; padding: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 500; color: var(--professional-blue); background: var(--cool-white); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .nowrap { white-space: nowrap; }
+  .msg { max-width: 420px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+</style>
+
+<h2 style="font-size: 24px; margin: 0 0 4px;">Facebook</h2>
+<p class="muted" style="margin: 0 0 20px;">Хуудасны статистик</p>
+
+<div class="stats">
+  <div class="card">
+    <div class="stat-label">Дагагч</div>
+    <div class="stat-value">{{ "{:,}".format(stats.followers) if stats.followers is not none else "—" }}</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">7 хоногийн өсөлт</div>
+    {% if stats.growth is none %}<div class="stat-value">—</div>
+    {% else %}<div class="stat-value {{ 'up' if stats.growth > 0 else 'down' if stats.growth < 0 }}">{{ "{:+,}".format(stats.growth) }}</div>{% endif %}
+  </div>
+  <div class="card">
+    <div class="stat-label">Нийт reaction</div>
+    <div class="stat-value">{{ "{:,}".format(stats.reactions) }}</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Нийт comment</div>
+    <div class="stat-value">{{ "{:,}".format(stats.comments) }}</div>
+  </div>
+</div>
+
+<div class="card chart-card" style="margin-bottom: 16px;">
+  <h3>Дагагчийн өсөлт</h3>
+  {% if chart %}
+  {% set c = chart %}
+  {% set label_every = ((c.points|length) / 8)|round(0, 'ceil')|int or 1 %}
+  <svg class="chart" viewBox="0 0 {{ c.width }} {{ c.height }}" role="img" aria-label="Дагагчийн тоо өдрөөр">
+    <line class="grid" x1="{{ c.pad }}" x2="{{ c.width - c.pad }}" y1="{{ c.pad }}" y2="{{ c.pad }}"></line>
+    <line class="grid" x1="{{ c.pad }}" x2="{{ c.width - c.pad }}" y1="{{ c.height - c.pad }}" y2="{{ c.height - c.pad }}"></line>
+    <text class="axis" x="{{ c.pad - 6 }}" y="{{ c.pad + 4 }}" text-anchor="end">{{ c.high }}</text>
+    <text class="axis" x="{{ c.pad - 6 }}" y="{{ c.height - c.pad + 4 }}" text-anchor="end">{{ c.low }}</text>
+    <polygon class="area" points="{{ c.area }}"></polygon>
+    <polyline class="line" points="{{ c.line }}"></polyline>
+    {% for p in c.points %}
+    <circle class="dot" cx="{{ p.x }}" cy="{{ p.y }}" r="3"><title>{{ p.day }}: {{ p.value }} дагагч</title></circle>
+    {% if loop.index0 % label_every == 0 or loop.last %}
+    <text class="axis" x="{{ p.x }}" y="{{ c.height - c.pad + 18 }}" text-anchor="middle">{{ p.day }}</text>
+    {% endif %}
+    {% endfor %}
+  </svg>
+  {% else %}
+  <p class="muted" style="margin: 0;">График гаргахад дор хаяж 2 өдрийн өгөгдөл хэрэгтэй.</p>
+  {% endif %}
+</div>
+
+<div class="posts-head"><h3>Постууд <span class="muted" style="font-weight: 400; font-size: 14px;">({{ posts|length }})</span></h3></div>
+{% if posts %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Пост</th>
+        <th>Нийтэлсэн</th>
+        <th class="num">Reaction</th>
+        <th class="num">Comment</th>
+        <th class="num">Share</th>
+        <th class="num">Нийт</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in posts %}
+      <tr>
+        <td><div class="msg">{{ p.message or "(бичвэргүй пост)" }}</div></td>
+        <td class="nowrap muted">{{ p.created }}</td>
+        <td class="num">{{ "{:,}".format(p.reactions or 0) }}</td>
+        <td class="num">{{ "{:,}".format(p.comments or 0) }}</td>
+        <td class="num">{{ "{:,}".format(p.shares or 0) }}</td>
+        <td class="num" style="font-weight: 600;">{{ "{:,}".format(p.total) }}</td>
+        <td class="nowrap"><a href="{{ p.link }}" target="_blank" rel="noopener">Facebook-т харах ↗</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card muted">Одоогоор постын статистик алга байна.</div>
+{% endif %}
+{% endblock %}

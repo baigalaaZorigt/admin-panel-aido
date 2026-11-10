@@ -1,7 +1,7 @@
 import os
 import re
 import secrets
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from functools import wraps
 from zoneinfo import ZoneInfo
 
@@ -15,6 +15,7 @@ load_dotenv()
 SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
 SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
 N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL", "").strip()
+N8N_STAFF_WEBHOOK_URL = os.environ.get("N8N_STAFF_WEBHOOK_URL", "").strip()
 UB_TZ = ZoneInfo("Asia/Ulaanbaatar")
 
 app = Flask(__name__)
@@ -216,26 +217,149 @@ def restore_statuses(rows):
 @login_required
 def bookings():
     rows = supabase_get(
-        "orders",
-        {
-            "select": "order_id,date,channel,customer,district,product,quantity,"
-                      "unit_price,delivery_fee,total,payment_method,status",
-            "order": "date.desc,created_at.desc",
-        },
+        "bookings",
+        {"select": "id,name,tour,people,phone,status,created_at", "order": "created_at.desc"},
     )
-    return render_template("bookings.html", orders=rows, active="bookings")
+    for row in rows:
+        # Supabase цагийг UTC-ээр өгдөг тул Улаанбаатарын цаг руу хөрвүүлнэ
+        row["created_at"] = parse_ts(row["created_at"]).strftime("%Y-%m-%d %H:%M")
+    return render_template("bookings.html", bookings=rows, active="bookings")
 
 
 @app.route("/facebook")
 @login_required
 def facebook():
-    return render_template("coming_soon.html", title="Facebook", active="facebook")
+    pages = supabase_get("fb_page_stats", {"select": "followers_count,captured_at",
+                                           "order": "captured_at.asc", "limit": "5000"})
+    posts = supabase_get("fb_post_stats", {
+        "select": "post_id,message,created_time,permalink_url,reactions,comments,shares,captured_at",
+        "order": "captured_at.desc", "limit": "5000"})
+    for row in pages:
+        row["captured_at"] = parse_ts(row["captured_at"])
+
+    # Пост бүрийн хамгийн сүүлийн хэмжилт (эрэмбэ шинээс хуучин тул эхнийх нь сүүлийнх)
+    latest = {}
+    for row in posts:
+        latest.setdefault(row["post_id"], row)
+    posts = list(latest.values())
+    for row in posts:
+        row["total"] = (row["reactions"] or 0) + (row["comments"] or 0) + (row["shares"] or 0)
+        row["created"] = parse_ts(row["created_time"]).strftime("%Y-%m-%d %H:%M") if row["created_time"] else "—"
+        row["link"] = row["permalink_url"] or f"https://facebook.com/{row['post_id']}"
+    posts.sort(key=lambda r: r["total"], reverse=True)
+
+    stats = {
+        "followers": pages[-1]["followers_count"] if pages else None,
+        "growth": follower_growth(pages, days=7),
+        "reactions": sum(r["reactions"] or 0 for r in posts),
+        "comments": sum(r["comments"] or 0 for r in posts),
+    }
+    return render_template("facebook.html", stats=stats, chart=follower_chart(pages),
+                           posts=posts, active="facebook")
+
+
+def follower_growth(pages, days):
+    """Сүүлийн `days` хоногт дагагч хэдээр өссөн. Хуучин хэмжилт байхгүй бол хамгийн эхнийхтэй харьцуулна."""
+    if len(pages) < 2:
+        return None
+    last = pages[-1]
+    since = last["captured_at"] - timedelta(days=days)
+    base = pages[0]
+    for row in pages:
+        if row["captured_at"] > since:
+            break
+        base = row
+    return last["followers_count"] - base["followers_count"]
+
+
+def follower_chart(pages, width=640, height=220, pad=36):
+    """Өдөр бүрийн сүүлийн дагагчийн тооноос SVG графикийн цэгүүдийг бэлдэнэ."""
+    daily = {}
+    for row in pages:
+        daily[row["captured_at"].date()] = row["followers_count"]
+    if len(daily) < 2:
+        return None
+    days, values = list(daily), list(daily.values())
+    low, high = min(values), max(values)
+    span = (high - low) or 1
+    step = (width - 2 * pad) / (len(days) - 1)
+    points = [{"x": round(pad + i * step, 1),
+               "y": round(height - pad - (v - low) / span * (height - 2 * pad), 1),
+               "day": d.strftime("%m-%d"), "value": v}
+              for i, (d, v) in enumerate(zip(days, values))]
+    line = " ".join(f"{p['x']},{p['y']}" for p in points)
+    area = f"{points[0]['x']},{height - pad} {line} {points[-1]['x']},{height - pad}"
+    return {"points": points, "line": line, "area": area, "width": width, "height": height,
+            "pad": pad, "low": low, "high": high}
 
 
 @app.route("/chat")
 @login_required
 def chat():
-    return render_template("coming_soon.html", title="Чат", active="chat")
+    messages = supabase_get(
+        "chat_messages",
+        {"select": "id,sender_id,role,text,created_at", "order": "created_at.desc", "limit": 2000},
+    )
+    open_handoffs = supabase_get(
+        "handoffs",
+        {"select": "sender_id,reason,created_at", "status": "eq.open", "order": "created_at.desc"},
+    )
+    needs_staff = {}
+    for h in open_handoffs:
+        needs_staff.setdefault(h["sender_id"], h)
+
+    conversations = {}
+    for msg in messages:  # шинээс хуучин руу эрэмбэлэгдсэн
+        msg["created_at"] = parse_ts(msg["created_at"])
+        conv = conversations.setdefault(msg["sender_id"], {"sender_id": msg["sender_id"], "messages": []})
+        conv["messages"].append(msg)
+    for conv in conversations.values():
+        conv["last"] = conv["messages"][0]
+        conv["messages"].reverse()  # харилцан яриаг хуучнаас шинэ рүү харуулна
+        conv["handoff"] = needs_staff.get(conv["sender_id"])
+    # Ажилтан хэрэгтэй яриа эхэндээ, дараа нь хамгийн сүүлд бичсэн нь
+    ordered = sorted(conversations.values(), key=lambda c: c["last"]["created_at"], reverse=True)
+    ordered.sort(key=lambda c: c["handoff"] is None)
+
+    selected_id = request.args.get("sender") or (ordered[0]["sender_id"] if ordered else None)
+    return render_template("chat.html", conversations=ordered,
+                           selected=conversations.get(selected_id), active="chat")
+
+
+@app.route("/chat/<sender_id>/reply", methods=["POST"])
+@login_required
+def chat_reply(sender_id):
+    text = request.form.get("text", "").strip()
+    if not text:
+        flash("Хариугаа бичнэ үү.", "error")
+    elif not N8N_STAFF_WEBHOOK_URL:
+        flash(".env файлд N8N_STAFF_WEBHOOK_URL тохируулаагүй байна.", "error")
+    else:
+        try:
+            resp = requests.post(N8N_STAFF_WEBHOOK_URL, json={"sender_id": sender_id, "text": text}, timeout=15)
+            app.logger.warning("n8n staff хариу (%s): %s %s", sender_id, resp.status_code, resp.text[:300])
+            resp.raise_for_status()
+            flash("Хариуг илгээлээ.", "success")
+        except requests.RequestException:
+            flash("Хариуг n8n руу илгээж чадсангүй. Дахин оролдоно уу.", "error")
+    return redirect(url_for("chat", sender=sender_id))
+
+
+@app.route("/chat/<sender_id>/resolve", methods=["POST"])
+@login_required
+def chat_resolve(sender_id):
+    try:
+        updated = supabase_update(
+            "handoffs", {"sender_id": f"eq.{sender_id}", "status": "eq.open"}, {"status": "resolved"},
+        )
+    except requests.RequestException:
+        flash("Төлөв солиход алдаа гарлаа. Дахин оролдоно уу.", "error")
+        return redirect(url_for("chat", sender=sender_id))
+    if updated:
+        flash("Шийдсэн гэж тэмдэглэлээ.", "success")
+    else:
+        flash("Энэ яриа аль хэдийн шийдэгдсэн байна.", "error")
+    return redirect(url_for("chat", sender=sender_id))
 
 
 # ---------------------------------------------------------
@@ -249,31 +373,29 @@ CRUD_RESOURCES = {
         "singular": "аялал",
         "name_field": "name",
         "order": "start_date.asc.nullslast",
-        "search": ["name", "destination", "description"],
-        "search_hint": "Нэр, чиглэлээр хайх",
+        "search": ["name", "meeting_place", "items"],
+        "search_hint": "Нэр, цугларах газраар хайх",
         "fields": [
             {"name": "name", "label": "Аяллын нэр", "type": "text", "required": True, "list": True},
-            {"name": "destination", "label": "Чиглэл", "type": "text", "required": True, "list": True},
             {"name": "start_date", "label": "Эхлэх огноо", "type": "date", "list": True},
-            {"name": "duration_days", "label": "Хоног", "type": "int", "min": 1, "list": True},
-            {"name": "price", "label": "Үнэ (₮)", "type": "money", "min": 0, "list": True},
-            {"name": "seats", "label": "Суудал", "type": "int", "min": 0, "list": True},
-            {"name": "description", "label": "Тайлбар", "type": "textarea"},
+            {"name": "days", "label": "Хоног", "type": "int", "min": 1, "required": True, "list": True},
+            {"name": "price", "label": "Үнэ (₮)", "type": "money", "min": 0, "required": True, "list": True},
+            {"name": "meeting_place", "label": "Цугларах газар", "type": "text", "list": True},
+            {"name": "items", "label": "Авч явах зүйлс", "type": "textarea"},
         ],
     },
     "staff": {
         "title": "Ажилтан",
         "singular": "ажилтан",
-        "name_field": "full_name",
-        "order": "full_name.asc",
-        "search": ["full_name", "position", "phone", "email"],
+        "name_field": "name",
+        "order": "name.asc",
+        "search": ["name", "role", "phone", "email"],
         "search_hint": "Нэр, албан тушаал, утас, и-мэйлээр хайх",
         "fields": [
-            {"name": "full_name", "label": "Овог нэр", "type": "text", "required": True, "list": True},
-            {"name": "position", "label": "Албан тушаал", "type": "text", "required": True, "list": True},
+            {"name": "name", "label": "Нэр", "type": "text", "required": True, "list": True},
+            {"name": "role", "label": "Албан тушаал", "type": "text", "list": True},
             {"name": "phone", "label": "Утас", "type": "tel", "list": True},
             {"name": "email", "label": "И-мэйл", "type": "email", "list": True},
-            {"name": "hired_on", "label": "Ажилд орсон огноо", "type": "date", "list": True},
         ],
     },
 }
@@ -359,7 +481,6 @@ def register_crud(key, cfg):
             if not errors:
                 try:
                     if item:
-                        data["updated_at"] = datetime.now(UB_TZ).isoformat()
                         saved = supabase_update(table, {"id": f"eq.{item_id}"}, data)
                     else:
                         saved = supabase_insert(table, data)
