@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .pub-header { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .pub-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 64px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+  .brand img { height: 40px; width: auto; display: block; }
+  .pub-nav { display: flex; gap: 8px; align-items: center; }
+  .pub-nav a.link { color: var(--trust-blue); text-decoration: none; font-weight: 500; padding: 8px 10px; }
+  .btn-messenger { display: inline-flex; align-items: center; gap: 8px; background: var(--white); color: var(--trust-blue); border: 1px solid var(--line); text-decoration: none; }
+  .btn-messenger:hover { background: var(--cool-white); }
+  .btn-messenger svg { width: 18px; height: 18px; flex-shrink: 0; }
+  a.btn { text-decoration: none; text-align: center; }
+  .pub-footer { margin-top: 64px; padding: 28px 0 40px; background: var(--trust-blue); color: rgba(255,255,255,.85); font-size: 14px; }
+  .pub-footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: center; }
+  .pub-footer a { color: var(--white); }
+  .pub-footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
+  @media (max-width: 560px) {
+    .pub-nav a.link { display: none; }
+    .brand img { height: 34px; }
+  }
+</style>
+<header class="pub-header">
+  <div class="wrap">
+    <a class="brand" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='logo.svg') }}" alt="AIDO Travel"></a>
+    <nav class="pub-nav">
+      <a class="link" href="{{ url_for('home') }}#tours">Аяллууд</a>
+      <a class="btn" href="{{ url_for('home') }}#book">Захиалах</a>
+    </nav>
+  </div>
+</header>
+<main>
+  {% block main %}{% endblock %}
+</main>
+<footer class="pub-footer">
+  <div class="wrap">
+    <span>© 2026 AIDO Travel</span>
+    <nav>
+      <a href="{{ url_for('privacy') }}">Нууцлалын бодлого</a>
+      {% if messenger_url %}<a href="{{ messenger_url }}" target="_blank" rel="noopener">Messenger</a>{% endif %}
+      <a href="{{ url_for('login') }}">Ажилтан нэвтрэх</a>
+    </nav>
+  </div>
+</footer>
+{% endblock %}

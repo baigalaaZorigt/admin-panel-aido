@@ -16,6 +16,8 @@ SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
 SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
 N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL", "").strip()
 N8N_STAFF_WEBHOOK_URL = os.environ.get("N8N_STAFF_WEBHOOK_URL", "").strip()
+MESSENGER_URL = os.environ.get("MESSENGER_URL", "").strip()  # жишээ: https://m.me/ХУУДАСНЫ_НЭР
+CONTACT_EMAIL = (os.environ.get("CONTACT_EMAIL") or "aido.hub.t@gmail.com").strip()
 UB_TZ = ZoneInfo("Asia/Ulaanbaatar")
 
 app = Flask(__name__)
@@ -122,7 +124,74 @@ def logout():
     return redirect(url_for("login"))
 
 
+# =========================================================
+# Нийтийн хуудас (нэвтрэлтгүй)
+# =========================================================
+PHONE_RE = re.compile(r"^\+?[0-9][0-9 -]{6,18}[0-9]$")
+
+
+def public_tours():
+    """Эхлэх огноо нь өнгөрөөгүй (эсвэл огноогүй) аяллууд."""
+    try:
+        rows = supabase_get("tours", {
+            "select": "id,name,days,price,start_date,meeting_place,items",
+            "or": f"(start_date.gte.{date.today().isoformat()},start_date.is.null)",
+            "order": "start_date.asc.nullslast"})
+    except requests.RequestException:
+        app.logger.exception("Нийтийн хуудас: аялал уншиж чадсангүй")
+        return []
+    for row in rows:
+        row["start"] = date.fromisoformat(row["start_date"]).strftime("%Y.%m.%d") if row["start_date"] else None
+    return rows
+
+
 @app.route("/")
+def home():
+    tours = public_tours()
+    return render_template("public_home.html", tours=tours, form={}, errors={},
+                           messenger_url=MESSENGER_URL)
+
+
+@app.route("/book", methods=["POST"])
+def book():
+    tours = public_tours()
+    form = {k: request.form.get(k, "").strip() for k in ("name", "phone", "tour", "people")}
+    # Робот бөглөдөг далд талбар — хүн хэзээ ч бөглөхгүй
+    if request.form.get("website"):
+        return redirect(url_for("home", booked=1) + "#book")
+
+    errors = {}
+    if not 2 <= len(form["name"]) <= 80:
+        errors["name"] = "Нэрээ бичнэ үү."
+    if not PHONE_RE.match(form["phone"]):
+        errors["phone"] = "Утасны дугаараа зөв бичнэ үү (жишээ: 99112233)."
+    if form["tour"] not in {t["name"] for t in tours}:
+        errors["tour"] = "Аяллаа сонгоно уу."
+    people = int(form["people"]) if form["people"].isdigit() else 0
+    if not 1 <= people <= 50:
+        errors["people"] = "Хүний тоо 1–50 хооронд байна."
+    if not request.form.get("consent"):
+        errors["consent"] = "Нууцлалын бодлогыг зөвшөөрнө үү."
+
+    if not errors:
+        try:
+            supabase_insert("bookings", {"name": form["name"], "phone": form["phone"],
+                                         "tour": form["tour"], "people": people, "status": "Шинэ"})
+            return redirect(url_for("home", booked=1) + "#book")
+        except requests.RequestException:
+            app.logger.exception("Нийтийн хуудас: захиалга бичиж чадсангүй")
+            errors["form"] = "Түр алдаа гарлаа. Дахин оролдох эсвэл Messenger-ээр бичнэ үү."
+    return render_template("public_home.html", tours=tours, form=form, errors=errors,
+                           messenger_url=MESSENGER_URL), 400
+
+
+@app.route("/privacy")
+def privacy():
+    return render_template("public_privacy.html", contact_email=CONTACT_EMAIL,
+                           messenger_url=MESSENGER_URL, updated="2026-11-10")
+
+
+@app.route("/admin")
 @login_required
 def drafts():
     rows = supabase_get(

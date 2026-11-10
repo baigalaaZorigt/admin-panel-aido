@@ -1,0 +1,161 @@
+{% extends "public_base.html" %}
+{% block title %}AIDO Travel — Монголын аяллууд{% endblock %}
+{% block main %}
+{% set chat_icon %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>{% endset %}
+<style>
+  .hero { background: linear-gradient(160deg, var(--trust-blue) 0%, var(--professional-blue) 100%); color: var(--white); padding: 64px 0 72px; }
+  .hero h1 { color: var(--white); font-size: clamp(30px, 6vw, 48px); margin: 0 0 14px; max-width: 640px; }
+  .hero h1 em { font-style: normal; color: var(--tech-cyan); }
+  .hero p { font-size: 17px; max-width: 560px; margin: 0 0 28px; color: rgba(255,255,255,.88); }
+  .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero .btn { background: var(--tech-cyan); color: var(--trust-blue); font-weight: 500; padding: 13px 22px; }
+  .hero .btn:hover { background: var(--white); }
+  .hero .btn-messenger { background: transparent; color: var(--white); border-color: rgba(255,255,255,.45); padding: 13px 22px; }
+  .hero .btn-messenger:hover { background: rgba(255,255,255,.1); }
+  section.block { padding: 48px 0 0; }
+  .section-title { font-size: 26px; margin: 0 0 6px; }
+  .tours { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+  .tour { display: flex; flex-direction: column; padding: 22px; }
+  .tour h3 { font-size: 20px; margin: 0 0 10px; }
+  .tour-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .chip { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--cool-white); border: 1px solid var(--line); }
+  .tour dl { margin: 0 0 16px; font-size: 14px; }
+  .tour dt { color: var(--professional-blue); font-size: 12px; margin-top: 8px; }
+  .tour dd { margin: 2px 0 0; }
+  .tour-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .price { font-family: "Noto Sans", Arial, sans-serif; font-weight: 700; font-size: 20px; }
+  .price small { font-weight: 400; font-size: 13px; color: var(--professional-blue); }
+  .book-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; align-items: start; margin-top: 20px; }
+  .book-side p { margin: 0 0 16px; }
+  .field { margin-bottom: 14px; }
+  .field input, .field select { margin: 6px 0 0; }
+  select { width: 100%; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; font: inherit; color: var(--trust-blue); background: var(--white); }
+  select:focus { outline: none; border-color: var(--professional-blue); box-shadow: 0 0 0 3px rgba(54, 197, 216, .35); }
+  .row2 { display: grid; grid-template-columns: 1fr 120px; gap: 12px; }
+  .field-error { color: var(--error); font-size: 13px; margin-top: 4px; }
+  .has-error input, .has-error select { border-color: var(--error); }
+  .consent { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; font-size: 14px; margin: 4px 0 6px; }
+  .consent input { width: 20px; height: 20px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--trust-blue); }
+  .submit { width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; }
+  .hp { position: absolute; left: -9999px; }
+  .success { text-align: center; padding: 32px 24px; }
+  .success .tick { width: 56px; height: 56px; border-radius: 50%; background: var(--tech-cyan); color: var(--trust-blue); display: grid; place-items: center; margin: 0 auto 12px; font-size: 28px; }
+  @media (max-width: 760px) {
+    .hero { padding: 44px 0 52px; }
+    .hero-cta a { flex: 1 1 100%; justify-content: center; }
+    .book-grid { grid-template-columns: 1fr; }
+    .card { padding: 20px; }
+  }
+</style>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>Монголын байгальд <em>мартагдашгүй</em> аялал</h1>
+    <p>Тэрэлжээс Хөвсгөл, Говь хүртэл. Аяллаа сонгоод хэдхэн секундэд захиалаарай, бид тантай утсаар холбогдоно.</p>
+    <div class="hero-cta">
+      <a class="btn" href="#tours">Аяллууд харах</a>
+      {% if messenger_url %}<a class="btn btn-messenger" href="{{ messenger_url }}" target="_blank" rel="noopener">{{ chat_icon }} Messenger-ээр бичих</a>{% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="block" id="tours">
+  <div class="wrap">
+    <h2 class="section-title">Удахгүй гарах аяллууд</h2>
+    <p class="muted" style="margin: 0;">Хүссэн аяллаа сонгоод «Захиалах» дарна уу.</p>
+    {% if tours %}
+    <div class="tours">
+      {% for t in tours %}
+      <article class="card tour">
+        <h3>{{ t.name }}</h3>
+        <div class="tour-facts">
+          <span class="chip">{{ t.days }} хоног</span>
+          {% if t.start %}<span class="chip">{{ t.start }}-нд гарна</span>{% endif %}
+        </div>
+        <dl>
+          {% if t.meeting_place %}<dt>Цугларах газар</dt><dd>{{ t.meeting_place }}</dd>{% endif %}
+          {% if t.items %}<dt>Авч явах зүйл</dt><dd>{{ t.items }}</dd>{% endif %}
+        </dl>
+        <div class="tour-foot">
+          <div class="price">{{ t.price|display("money") }} <small>/ хүн</small></div>
+          <a class="btn" href="#book" data-tour="{{ t.name }}">Захиалах</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card muted" style="margin-top: 20px;">Одоогоор нээлттэй аялал алга. Messenger-ээр бичиж асуугаарай.</div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="block" id="book">
+  <div class="wrap">
+    <div class="book-grid">
+      <div class="book-side">
+        <h2 class="section-title">Захиалга өгөх</h2>
+        <p class="muted">Маягтыг бөглөөд илгээхэд манай ажилтан 24 цагийн дотор утсаар холбогдож баталгаажуулна.</p>
+        {% if messenger_url %}
+        <p>Асуух зүйл байна уу?</p>
+        <a class="btn btn-messenger" href="{{ messenger_url }}" target="_blank" rel="noopener">{{ chat_icon }} Messenger-ээр бичих</a>
+        {% endif %}
+      </div>
+
+      {% if request.args.get("booked") %}
+      <div class="card success" role="status">
+        <div class="tick">✓</div>
+        <h3 style="margin: 0 0 6px;">Захиалга хүлээж авлаа!</h3>
+        <p class="muted" style="margin: 0 0 16px;">Бид удахгүй тантай утсаар холбогдоно. Баярлалаа.</p>
+        <a class="btn btn-outline" href="{{ url_for('home') }}#book">Дахин захиалах</a>
+      </div>
+      {% elif tours %}
+      <form class="card" method="post" action="{{ url_for('book') }}#book" novalidate>
+        {% if errors.form %}<div class="error">{{ errors.form }}</div>{% endif %}
+        <div class="field {{ 'has-error' if errors.name }}">
+          <label for="name">Нэр</label>
+          <input id="name" name="name" value="{{ form.name }}" autocomplete="name" maxlength="80" required>
+          {% if errors.name %}<div class="field-error">{{ errors.name }}</div>{% endif %}
+        </div>
+        <div class="field {{ 'has-error' if errors.phone }}">
+          <label for="phone">Утас</label>
+          <input id="phone" name="phone" type="tel" inputmode="tel" value="{{ form.phone }}" autocomplete="tel" placeholder="99112233" required>
+          {% if errors.phone %}<div class="field-error">{{ errors.phone }}</div>{% endif %}
+        </div>
+        <div class="row2">
+          <div class="field {{ 'has-error' if errors.tour }}">
+            <label for="tour">Аялал</label>
+            <select id="tour" name="tour" required>
+              <option value="">Сонгох…</option>
+              {% for t in tours %}<option value="{{ t.name }}" {{ 'selected' if form.tour == t.name }}>{{ t.name }}{% if t.start %} · {{ t.start }}{% endif %}</option>{% endfor %}
+            </select>
+            {% if errors.tour %}<div class="field-error">{{ errors.tour }}</div>{% endif %}
+          </div>
+          <div class="field {{ 'has-error' if errors.people }}">
+            <label for="people">Хүний тоо</label>
+            <input id="people" name="people" type="number" inputmode="numeric" min="1" max="50" value="{{ form.people or 1 }}" required>
+            {% if errors.people %}<div class="field-error">{{ errors.people }}</div>{% endif %}
+          </div>
+        </div>
+        <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <label class="consent {{ 'has-error' if errors.consent }}">
+          <input type="checkbox" name="consent" value="1" {{ 'checked' if request.form.get('consent') }} required>
+          <span>Миний нэр, утасны дугаарыг захиалга баталгаажуулах зорилгоор ашиглахыг зөвшөөрч байна. <a href="{{ url_for('privacy') }}" target="_blank">Нууцлалын бодлого</a></span>
+        </label>
+        {% if errors.consent %}<div class="field-error">{{ errors.consent }}</div>{% endif %}
+        <button class="btn submit" type="submit">Захиалга илгээх</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<script>
+  // Аяллын картын «Захиалах» дарахад маягт дээрх аяллыг автоматаар сонгоно
+  document.querySelectorAll("[data-tour]").forEach(function (link) {
+    link.addEventListener("click", function () {
+      var select = document.getElementById("tour");
+      if (select) select.value = link.dataset.tour;
+    });
+  });
+</script>
+{% endblock %}
