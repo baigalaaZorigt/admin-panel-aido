@@ -622,4 +622,5 @@ if __name__ == "__main__":
     # debug=True нь /console гэх аюултай хуудас нээдэг тул ашиглахгүй;
     # кодоо засахад өөрөө дахин ачаалах боломжийг л үлдээнэ.
     app.config["TEMPLATES_AUTO_RELOAD"] = True
+    app.jinja_env.auto_reload = True  # Jinja орчин эрт үүссэн тул шууд асаана — template засахад шууд харагдана
     app.run(host="127.0.0.1", port=5001, use_reloader=True)
