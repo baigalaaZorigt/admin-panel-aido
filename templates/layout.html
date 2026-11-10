@@ -21,9 +21,11 @@
   @media (max-width: 720px) {
     .topbar { padding: 10px 16px; }
     .user-email { display: none; }
+    .topbar img { height: 36px !important; }
+    .topbar .heading { font-size: 15px !important; }
     .shell { flex-direction: column; }
-    .sidebar { width: auto; display: flex; gap: 4px; overflow-x: auto; padding: 8px 16px; border-right: 0; border-bottom: 1px solid var(--line); }
-    .sidebar a { margin: 0; white-space: nowrap; }
+    .sidebar { width: auto; display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+    .sidebar a { margin: 0; white-space: nowrap; padding: 8px 12px; font-size: 14px; }
     .page { padding: 24px 16px; }
   }
 </style>

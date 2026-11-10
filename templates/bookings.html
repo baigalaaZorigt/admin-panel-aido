@@ -18,7 +18,7 @@
 <h2 style="font-size: 24px; margin: 0 0 4px;">Захиалга</h2>
 <p class="muted" style="margin: 0 0 20px;">Нийт {{ bookings|length }} захиалга</p>
 {% if bookings %}
-<div class="card table-wrap">
+<div class="card table-wrap stack">
   <table>
     <thead>
       <tr>
@@ -33,12 +33,12 @@
     <tbody>
       {% for b in bookings %}
       <tr>
-        <td class="nowrap" style="font-weight: 500;">{{ b.name }}</td>
-        <td>{{ b.tour }}</td>
-        <td class="num">{{ b.people }}</td>
-        <td class="nowrap">{{ b.phone or "—" }}</td>
-        <td><span class="badge badge-{{ status_classes.get(b.status, 'new') }}">{{ b.status }}</span></td>
-        <td class="nowrap muted">{{ b.created_at }}</td>
+        <td class="nowrap cell-title" style="font-weight: 500;">{{ b.name }}</td>
+        <td data-label="Аялал">{{ b.tour }}</td>
+        <td class="num" data-label="Хүн">{{ b.people }}</td>
+        <td class="nowrap" data-label="Утас">{{ b.phone or "—" }}</td>
+        <td data-label="Төлөв"><span class="badge badge-{{ status_classes.get(b.status, 'new') }}">{{ b.status }}</span></td>
+        <td class="nowrap muted" data-label="Захиалсан">{{ b.created_at }}</td>
       </tr>
       {% endfor %}
     </tbody>

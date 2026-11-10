@@ -37,7 +37,7 @@
 {% if load_error %}
 <div class="error">{{ load_error }}</div>
 {% elif rows %}
-<div class="card table-wrap">
+<div class="card table-wrap stack">
   <table>
     <thead>
       <tr>
@@ -49,9 +49,9 @@
       {% for row in rows %}
       <tr>
         {% for f in list_fields %}
-        <td class="{{ 'num' if f.type in ('int', 'money') }}"{% if loop.first %} style="font-weight: 500;"{% endif %}>{{ row[f.name] | display(f.type) }}</td>
+        <td class="{{ 'num' if f.type in ('int', 'money') }}{{ ' cell-title' if loop.first }}" data-label="{{ f.label }}"{% if loop.first %} style="font-weight: 500;"{% endif %}>{{ row[f.name] | display(f.type) }}</td>
         {% endfor %}
-        <td class="row-actions">
+        <td class="row-actions cell-actions">
           <a class="link-edit" href="{{ url_for(key ~ '_edit', item_id=row.id) }}">Засах</a>
           <a class="link-delete" href="{{ url_for(key ~ '_delete', item_id=row.id) }}">Устгах</a>
         </td>

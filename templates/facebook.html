@@ -74,7 +74,7 @@
 
 <div class="posts-head"><h3>Постууд <span class="muted" style="font-weight: 400; font-size: 14px;">({{ posts|length }})</span></h3></div>
 {% if posts %}
-<div class="card table-wrap">
+<div class="card table-wrap stack">
   <table>
     <thead>
       <tr>
@@ -90,13 +90,13 @@
     <tbody>
       {% for p in posts %}
       <tr>
-        <td><div class="msg">{{ p.message or "(бичвэргүй пост)" }}</div></td>
-        <td class="nowrap muted">{{ p.created }}</td>
-        <td class="num">{{ "{:,}".format(p.reactions or 0) }}</td>
-        <td class="num">{{ "{:,}".format(p.comments or 0) }}</td>
-        <td class="num">{{ "{:,}".format(p.shares or 0) }}</td>
-        <td class="num" style="font-weight: 600;">{{ "{:,}".format(p.total) }}</td>
-        <td class="nowrap"><a href="{{ p.link }}" target="_blank" rel="noopener">Facebook-т харах ↗</a></td>
+        <td class="cell-title"><div class="msg">{{ p.message or "(бичвэргүй пост)" }}</div></td>
+        <td class="nowrap muted" data-label="Нийтэлсэн">{{ p.created }}</td>
+        <td class="num" data-label="Reaction">{{ "{:,}".format(p.reactions or 0) }}</td>
+        <td class="num" data-label="Comment">{{ "{:,}".format(p.comments or 0) }}</td>
+        <td class="num" data-label="Share">{{ "{:,}".format(p.shares or 0) }}</td>
+        <td class="num" data-label="Нийт" style="font-weight: 600;">{{ "{:,}".format(p.total) }}</td>
+        <td class="nowrap cell-actions"><a href="{{ p.link }}" target="_blank" rel="noopener">Facebook-т харах ↗</a></td>
       </tr>
       {% endfor %}
     </tbody>

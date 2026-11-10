@@ -71,7 +71,23 @@
     .btn-danger:hover { background: #8F1C13; }
     .notice { padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; }
     .notice-success { background: var(--white); border: 1px solid var(--line); border-left: 4px solid var(--tech-cyan); }
-    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .visually-hidden { position: absolute; top: 0; left: 0; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .card { position: relative; }  /* дотор нь нуусан текст хуудсыг өргөсгөхгүй */
+    img, svg { max-width: 100%; }
+    /* Утсан дээр хүснэгтийн мөр бүр карт болно (баганын нэр нь data-label-аас) */
+    @media (max-width: 640px) {
+      .stack { padding: 0; }
+      .stack table, .stack tbody, .stack tr, .stack td { display: block; width: 100%; }
+      .stack thead { display: none; }
+      .stack tr { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+      .stack tbody tr:last-child { border-bottom: 0; }
+      .stack td { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 3px 0 !important; border: 0 !important; text-align: right !important; white-space: normal !important; }
+      .stack td[data-label]::before { content: attr(data-label); color: var(--professional-blue); font-size: 13px; text-align: left; flex-shrink: 0; }
+      .stack td.cell-title { display: block; text-align: left !important; font-weight: 500; font-size: 15px; padding-bottom: 6px !important; }
+      .stack td.cell-title::before { display: none; }
+      .stack td.cell-actions { justify-content: flex-end; padding-top: 8px !important; }
+      .stack td.cell-actions a:first-child { margin-left: 0; }
+    }
     .muted { color: var(--professional-blue); }
     .badge { display: inline-block; font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
     .error {
